@@ -1,0 +1,38 @@
+{
+  "total_frames_analyzed": 301,
+  "emotion_frequency": {
+    "neutral": {
+      "count": 134,
+      "percentage": 44.518272425249165
+    },
+    "sad": {
+      "count": 80,
+      "percentage": 26.578073089701
+    },
+    "angry": {
+      "count": 66,
+      "percentage": 21.92691029900332
+    },
+    "fear": {
+      "count": 20,
+      "percentage": 6.64451827242525
+    },
+    "happy": {
+      "count": 1,
+      "percentage": 0.33222591362126247
+    }
+  },
+  "average_scores": {
+    "angry": 23.11491900271767,
+    "disgust": 0.13209014419298687,
+    "fear": 10.162224086406841,
+    "happy": 0.8610420522881103,
+    "sad": 27.605478728332393,
+    "surprise": 0.05777366856324155,
+    "neutral": 38.066473643292376
+  },
+  "final_result": {
+    "emotion": "neutral",
+    "confidence": 44.518272425249165
+  }
+}

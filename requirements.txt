@@ -1,0 +1,7 @@
+websockets
+deepface
+tf-keras
+opencv-python
+python-dotenv
+supabase
+numpy
