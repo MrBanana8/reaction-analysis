@@ -119,7 +119,7 @@ class VideoEmotionServer:
             print(f"Error in connection {session_id}: {e}")
         finally:
             self.summarize_and_save()
-        print(f"Session ended: {session_id}")
+            print(f"Session ended: {session_id}")
             print(f"Summary saved to {self.output_file}")
 
     async def process_frame(
