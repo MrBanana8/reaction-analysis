@@ -1,14 +1,13 @@
 # Video Emotion Analysis
 
-Real-time facial emotion recognition using WebSockets, OpenCV, and DeepFace.
+Real-time facial emotion recognition using Hume AI via WebSocket.
 
 ## Features
 
-- WebSocket server that receives video frames
-- Facial emotion detection using DeepFace
-- Auto-detection of video resolution
-- Frame skipping for performance optimization
-- Summary report with dominant emotion analysis
+- Real-time WebSocket server for production use
+- 48 distinct emotion dimensions
+- Per-frame emotion detection
+- Session summary with dominant emotion
 
 ## Installation
 
@@ -18,87 +17,81 @@ pip install -r requirements.txt
 
 ## Configuration
 
-Copy `.env.example` to `.env` and adjust settings:
+1. Get an API key from [Hume AI](https://www.hume.ai/)
+2. Create `.env` file:
 
 ```bash
 cp .env.example .env
 ```
 
-Available settings:
+3. Add your API key to `.env`:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `WS_HOST` | `0.0.0.0` | WebSocket server host |
-| `WS_PORT` | `8765` | WebSocket server port |
-| `OUTPUT_FILE` | `emotion_results.json` | Output file for results |
-| `ANALYZE_EVERY_N_FRAMES` | `1` | Analyze every Nth frame (higher = faster) |
+```
+HUME_API_KEY=your_api_key_here
+```
 
 ## Usage
 
-### Start the Server
+Start the server:
 
 ```bash
-python main.py
+python server.py
 ```
 
-### Test with Webcam
+The server listens on `ws://0.0.0.0:8765` by default. Configure via environment variables:
+
+```
+WS_HOST=0.0.0.0
+WS_PORT=8765
+```
+
+**Testing the server:**
 
 ```bash
+# Terminal 1: Start server
+python server.py
+
+# Terminal 2: Test with webcam (10 seconds)
 python test_client.py
-```
 
-Press `q` to quit.
-
-### Test with Video File
-
-```bash
-python test_video.py /path/to/video.mp4
+# Or test with a video file
+python test_client.py video.mp4
 ```
 
 ## Protocol
 
-1. Client connects to WebSocket server
-2. Client sends JSON with frame dimensions: `{"width": 640, "height": 480}`
-3. Server responds: `{"status": "ready"}`
-4. Client sends raw BGR frame bytes
-5. Server responds with emotion analysis:
+1. Connect to the WebSocket server
+2. Receive `{"status": "ready"}` when connected
+3. Send JPEG frames as binary data
+4. Receive per-frame results:
    ```json
-   {"status": "success", "faces_detected": 1, "emotions": ["happy"]}
+   {"status": "frame_processed", "frame": 1, "faces_detected": 1, "emotions": ["Joy"]}
    ```
-6. On disconnect, server saves summary to `emotion_results.json`
+5. Send `{"action": "end"}` to finish
+6. Receive final summary:
+   ```json
+   {
+     "status": "complete",
+     "session_id": "abc123",
+     "total_frames": 100,
+     "frames_with_faces": 95,
+     "processing_time_seconds": 10.5,
+     "emotion_frequency": {"Joy": {"count": 60, "percentage": 63.2}},
+     "average_scores": {"Joy": 0.45, "Calmness": 0.32},
+     "final_result": {"emotion": "Joy", "confidence": 63.2}
+   }
+   ```
 
-## Output
+## Hume AI Emotions
 
-After analysis, results are saved as JSON:
+Hume AI detects 48 emotions including:
+- Joy, Sadness, Anger, Fear, Surprise, Disgust
+- Admiration, Amusement, Anxiety, Awe
+- Boredom, Calmness, Concentration, Confusion
+- Contempt, Contentment, Craving, Determination
+- And many more...
 
-```json
-{
-  "total_frames_analyzed": 100,
-  "emotion_frequency": {
-    "happy": {"count": 60, "percentage": 60.0},
-    "neutral": {"count": 30, "percentage": 30.0},
-    "surprise": {"count": 10, "percentage": 10.0}
-  },
-  "average_scores": {
-    "happy": 45.2,
-    "neutral": 25.1,
-    "sad": 10.5,
-    "fear": 8.2,
-    "angry": 5.0,
-    "surprise": 4.0,
-    "disgust": 2.0
-  },
-  "final_result": {
-    "emotion": "happy",
-    "confidence": 60.0
-  }
-}
-```
+## Links
 
-## Performance Tips
-
-Set `ANALYZE_EVERY_N_FRAMES=5` in `.env` to analyze every 5th frame, making processing ~5x faster while still capturing emotion changes.
-
-## Based On
-
-[Facial-Emotion-Recognition-using-OpenCV-and-Deepface](https://github.com/manish-9245/Facial-Emotion-Recognition-using-OpenCV-and-Deepface)
+- [Hume AI](https://www.hume.ai/)
+- [Hume API Docs](https://dev.hume.ai/)
