@@ -33,6 +33,7 @@ class EmotionAnalysisServer:
         self.host = os.getenv("WS_HOST", "0.0.0.0")
         self.port = int(os.getenv("WS_PORT", "8765"))
         self.api_key = os.getenv("HUME_API_KEY")
+        self.analyze_every_n_frames = int(os.getenv("ANALYZE_EVERY_N_FRAMES", "1"))
 
         if not self.api_key:
             raise ValueError("HUME_API_KEY must be set in .env")
@@ -65,6 +66,14 @@ class EmotionAnalysisServer:
                 async for message in websocket:
                     if isinstance(message, bytes):
                         frame_count += 1
+
+                        # Skip frames for performance
+                        if frame_count % self.analyze_every_n_frames != 0:
+                            await websocket.send(json.dumps({
+                                "status": "frame_skipped",
+                                "frame": frame_count,
+                            }))
+                            continue
 
                         # Save frame to temp file
                         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:

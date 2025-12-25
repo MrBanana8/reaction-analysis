@@ -43,6 +43,7 @@ The server listens on `ws://0.0.0.0:8765` by default. Configure via environment 
 ```
 WS_HOST=0.0.0.0
 WS_PORT=8765
+ANALYZE_EVERY_N_FRAMES=5  # Analyze every 5th frame (faster)
 ```
 
 **Testing the server:**
@@ -65,7 +66,11 @@ python test_client.py video.mp4
 3. Send JPEG frames as binary data
 4. Receive per-frame results:
    ```json
-   {"status": "frame_processed", "frame": 1, "faces_detected": 1, "emotions": ["Joy"]}
+   {"status": "frame_processed", "frame": 5, "faces_detected": 1, "emotions": ["Joy"]}
+   ```
+   Or if frame was skipped (based on `ANALYZE_EVERY_N_FRAMES`):
+   ```json
+   {"status": "frame_skipped", "frame": 1}
    ```
 5. Send `{"action": "end"}` to finish
 6. Receive final summary:
@@ -74,9 +79,9 @@ python test_client.py video.mp4
      "status": "complete",
      "session_id": "abc123",
      "total_frames": 100,
-     "frames_with_faces": 95,
-     "processing_time_seconds": 10.5,
-     "emotion_frequency": {"Joy": {"count": 60, "percentage": 63.2}},
+     "frames_with_faces": 19,
+     "processing_time_seconds": 5.2,
+     "emotion_frequency": {"Joy": {"count": 12, "percentage": 63.2}},
      "average_scores": {"Joy": 0.45, "Calmness": 0.32},
      "final_result": {"emotion": "Joy", "confidence": 63.2}
    }
