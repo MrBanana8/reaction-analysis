@@ -50,6 +50,7 @@ class EmotionAnalysisServer:
         all_emotions = []
         emotion_scores_sum = {}
         emotion_scores_count = {}
+        emotions_per_second = {}  # {second: [emotions]}
         frame_count = 0
 
         try:
@@ -84,6 +85,9 @@ class EmotionAnalysisServer:
                             # Send frame to Hume
                             result = await hume_socket.send_file(tmp_path, config=face_config)
 
+                            # Calculate current second
+                            current_second = int(time.time() - start_time)
+
                             faces_detected = 0
                             frame_emotions = []
 
@@ -99,6 +103,11 @@ class EmotionAnalysisServer:
                                         all_emotions.append(dominant)
                                         frame_emotions.append(dominant)
 
+                                        # Track emotion for this second
+                                        if current_second not in emotions_per_second:
+                                            emotions_per_second[current_second] = []
+                                        emotions_per_second[current_second].append(dominant)
+
                                         for name, score in emotions_dict.items():
                                             if name not in emotion_scores_sum:
                                                 emotion_scores_sum[name] = 0
@@ -110,6 +119,7 @@ class EmotionAnalysisServer:
                             await websocket.send(json.dumps({
                                 "status": "frame_processed",
                                 "frame": frame_count,
+                                "second": current_second,
                                 "faces_detected": faces_detected,
                                 "emotions": frame_emotions,
                             }))
@@ -146,6 +156,13 @@ class EmotionAnalysisServer:
                 avg_scores = {k: emotion_scores_sum[k] / emotion_scores_count[k] for k in emotion_scores_sum}
                 most_frequent = emotion_counts.most_common(1)[0]
 
+                # Calculate dominant emotion per second
+                timeline = {}
+                for second in sorted(emotions_per_second.keys()):
+                    second_counts = Counter(emotions_per_second[second])
+                    dominant = second_counts.most_common(1)[0][0]
+                    timeline[second] = dominant
+
                 summary = {
                     "status": "complete",
                     "session_id": session_id,
@@ -157,6 +174,7 @@ class EmotionAnalysisServer:
                         for emotion, count in emotion_counts.most_common()
                     },
                     "average_scores": {k: round(v, 4) for k, v in sorted(avg_scores.items(), key=lambda x: -x[1])},
+                    "timeline": timeline,  # Emotion per second
                     "final_result": {
                         "emotion": most_frequent[0],
                         "confidence": round((most_frequent[1] / total) * 100, 1),

@@ -69,7 +69,7 @@ python test_client.py video.mp4
 3. Send JPEG frames as binary data
 4. Receive per-frame results:
    ```json
-   {"status": "frame_processed", "frame": 5, "faces_detected": 1, "emotions": ["Joy"]}
+   {"status": "frame_processed", "frame": 5, "second": 2, "faces_detected": 1, "emotions": ["Joy"]}
    ```
    Or if frame was skipped (based on `ANALYZE_EVERY_N_FRAMES`):
    ```json
@@ -86,9 +86,12 @@ python test_client.py video.mp4
      "processing_time_seconds": 5.2,
      "emotion_frequency": {"Joy": {"count": 12, "percentage": 63.2}},
      "average_scores": {"Joy": 0.45, "Calmness": 0.32},
+     "timeline": {"0": "Calmness", "1": "Joy", "2": "Joy", "3": "Surprise", "4": "Joy"},
      "final_result": {"emotion": "Joy", "confidence": 63.2}
    }
    ```
+
+   The `timeline` field contains the dominant emotion for each second of the session.
 
 ## Hume AI Emotions
 
