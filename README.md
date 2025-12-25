@@ -52,8 +52,11 @@ ANALYZE_EVERY_N_FRAMES=5  # Analyze every 5th frame (faster)
 # Terminal 1: Start server
 python server.py
 
-# Terminal 2: Test with webcam (10 seconds)
+# Terminal 2: Test with webcam (10 seconds default)
 python test_client.py
+
+# Webcam for 30 seconds
+python test_client.py 30
 
 # Or test with a video file
 python test_client.py video.mp4

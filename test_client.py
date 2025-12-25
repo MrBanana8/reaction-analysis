@@ -1,8 +1,9 @@
 """
 Test client for the WebSocket emotion analysis server.
-Usage: python test_client.py [video_path]
-
-If no video path provided, uses webcam.
+Usage:
+  python test_client.py                  # Webcam for 10 seconds
+  python test_client.py 30               # Webcam for 30 seconds
+  python test_client.py video.mp4        # Video file
 """
 
 import asyncio
@@ -153,6 +154,11 @@ async def test_with_webcam(server_url: str = "ws://localhost:8765", duration: in
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        asyncio.run(test_with_video(sys.argv[1]))
+        arg = sys.argv[1]
+        # Check if arg is a number (duration) or a file path
+        if arg.isdigit():
+            asyncio.run(test_with_webcam(duration=int(arg)))
+        else:
+            asyncio.run(test_with_video(arg))
     else:
         asyncio.run(test_with_webcam())
