@@ -15,6 +15,7 @@ from collections import Counter
 import websockets
 from dotenv import load_dotenv
 from hume import AsyncHumeClient
+from supabase import create_client, Client
 from hume.expression_measurement.stream.stream.socket_client import Config
 from hume.expression_measurement.stream.stream.types import StreamFace
 
@@ -38,7 +39,43 @@ class EmotionAnalysisServer:
         if not self.api_key:
             raise ValueError("HUME_API_KEY must be set in .env")
 
+        # Initialize Supabase client (optional)
+        self.supabase: Client | None = None
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_SERVICE_KEY")
+        if supabase_url and supabase_key:
+            self.supabase = create_client(supabase_url, supabase_key)
+            logger.info("Supabase client initialized")
+        else:
+            logger.warning("SUPABASE_URL or SUPABASE_SERVICE_KEY not set - results will not be saved to database")
+
         self.active_connections = 0
+
+    async def upload_to_supabase(self, summary: dict) -> bool:
+        """Upload analysis results to Supabase."""
+        if not self.supabase:
+            return False
+
+        try:
+            data = {
+                "session_id": summary.get("session_id"),
+                "total_frames": summary.get("total_frames"),
+                "frames_with_faces": summary.get("frames_with_faces"),
+                "processing_time_seconds": summary.get("processing_time_seconds"),
+                "dominant_emotion": summary.get("final_result", {}).get("emotion"),
+                "dominant_emotion_confidence": summary.get("final_result", {}).get("confidence"),
+                "emotion_frequency": summary.get("emotion_frequency"),
+                "average_scores": summary.get("average_scores"),
+                "timeline": summary.get("timeline"),
+                "raw_response": summary,
+            }
+
+            self.supabase.table("analysis_results").insert(data).execute()
+            logger.info(f"[{summary.get('session_id')}] Results uploaded to Supabase")
+            return True
+        except Exception as e:
+            logger.error(f"[{summary.get('session_id')}] Failed to upload to Supabase: {e}")
+            return False
 
     async def handle_connection(self, websocket):
         """Handle a single WebSocket connection."""
@@ -185,6 +222,9 @@ class EmotionAnalysisServer:
                     await websocket.send(json.dumps(summary))
                 except:
                     pass
+
+                # Upload to Supabase
+                await self.upload_to_supabase(summary)
 
                 logger.info(
                     f"[{session_id}] Complete: {frame_count} frames, "

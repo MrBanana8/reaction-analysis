@@ -2,3 +2,4 @@ hume
 python-dotenv
 opencv-python
 websockets
+supabase
