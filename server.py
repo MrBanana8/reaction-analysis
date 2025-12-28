@@ -9,7 +9,6 @@ import logging
 import os
 import tempfile
 import time
-import uuid
 from collections import Counter
 
 import websockets
@@ -60,7 +59,6 @@ class EmotionAnalysisServer:
 
         try:
             data = {
-                "session_id": summary.get("session_id"),
                 "total_frames": summary.get("total_frames"),
                 "frames_with_faces": summary.get("frames_with_faces"),
                 "processing_time_seconds": summary.get("processing_time_seconds"),
@@ -79,17 +77,16 @@ class EmotionAnalysisServer:
                 data["ad_id"] = context["ad_id"]
 
             self.supabase.table("analysis_results").insert(data).execute()
-            logger.info(f"[{summary.get('session_id')}] Results uploaded to Supabase")
+            logger.info("Results uploaded to Supabase")
             return True
         except Exception as e:
-            logger.error(f"[{summary.get('session_id')}] Failed to upload to Supabase: {e}")
+            logger.error(f"Failed to upload to Supabase: {e}")
             return False
 
     async def handle_connection(self, websocket):
         """Handle a single WebSocket connection."""
-        session_id = str(uuid.uuid4())[:8]
         self.active_connections += 1
-        logger.info(f"[{session_id}] Client connected (active: {self.active_connections})")
+        logger.info(f"Client connected (active: {self.active_connections})")
 
         start_time = time.time()
         all_emotions = []
@@ -107,7 +104,7 @@ class EmotionAnalysisServer:
             face_config = Config(face=StreamFace())
 
             async with client.expression_measurement.stream.connect() as hume_socket:
-                logger.info(f"[{session_id}] Connected to Hume AI")
+                logger.info("Connected to Hume AI")
 
                 # Send ready message to client
                 await websocket.send(json.dumps({"status": "ready"}))
@@ -173,7 +170,7 @@ class EmotionAnalysisServer:
                             }))
 
                         except Exception as e:
-                            logger.error(f"[{session_id}] Frame {frame_count} error: {e}")
+                            logger.error(f"Frame {frame_count} error: {e}")
                             await websocket.send(json.dumps({
                                 "status": "error",
                                 "frame": frame_count,
@@ -189,7 +186,7 @@ class EmotionAnalysisServer:
                         if data.get("action") == "start":
                             client_context["user_id"] = data.get("user_id")
                             client_context["ad_id"] = data.get("ad_id")
-                            logger.info(f"[{session_id}] Context set - user_id: {client_context.get('user_id')}, ad_id: {client_context.get('ad_id')}")
+                            logger.info(f"Context set - user_id: {client_context.get('user_id')}, ad_id: {client_context.get('ad_id')}")
                             await websocket.send(json.dumps({"status": "context_set", "user_id": client_context.get("user_id"), "ad_id": client_context.get("ad_id")}))
                             continue
 
@@ -198,9 +195,9 @@ class EmotionAnalysisServer:
                             break
 
         except websockets.exceptions.ConnectionClosed:
-            logger.info(f"[{session_id}] Client disconnected")
+            logger.info("Client disconnected")
         except Exception as e:
-            logger.error(f"[{session_id}] Error: {e}")
+            logger.error(f"Error: {e}")
         finally:
             self.active_connections -= 1
             elapsed_time = time.time() - start_time
@@ -221,7 +218,6 @@ class EmotionAnalysisServer:
 
                 summary = {
                     "status": "complete",
-                    "session_id": session_id,
                     "total_frames": frame_count,
                     "frames_with_faces": total,
                     "processing_time_seconds": round(elapsed_time, 2),
@@ -246,14 +242,13 @@ class EmotionAnalysisServer:
                 await self.upload_to_supabase(summary, client_context)
 
                 logger.info(
-                    f"[{session_id}] Complete: {frame_count} frames, "
+                    f"Complete: {frame_count} frames, "
                     f"{total} faces, {elapsed_time:.2f}s, result: {most_frequent[0]}"
                 )
             else:
                 try:
                     await websocket.send(json.dumps({
                         "status": "complete",
-                        "session_id": session_id,
                         "total_frames": frame_count,
                         "frames_with_faces": 0,
                         "processing_time_seconds": round(elapsed_time, 2),
@@ -262,7 +257,7 @@ class EmotionAnalysisServer:
                 except:
                     pass
 
-                logger.info(f"[{session_id}] Complete: {frame_count} frames, no faces, {elapsed_time:.2f}s")
+                logger.info(f"Complete: {frame_count} frames, no faces, {elapsed_time:.2f}s")
 
     async def start(self):
         """Start the WebSocket server."""
