@@ -51,10 +51,12 @@ class EmotionAnalysisServer:
 
         self.active_connections = 0
 
-    async def upload_to_supabase(self, summary: dict) -> bool:
+    async def upload_to_supabase(self, summary: dict, context: dict = None) -> bool:
         """Upload analysis results to Supabase."""
         if not self.supabase:
             return False
+
+        context = context or {}
 
         try:
             data = {
@@ -69,6 +71,12 @@ class EmotionAnalysisServer:
                 "timeline": summary.get("timeline"),
                 "raw_response": summary,
             }
+
+            # Add context if provided
+            if context.get("user_id"):
+                data["user_id"] = context["user_id"]
+            if context.get("ad_id"):
+                data["ad_id"] = context["ad_id"]
 
             self.supabase.table("analysis_results").insert(data).execute()
             logger.info(f"[{summary.get('session_id')}] Results uploaded to Supabase")
@@ -89,6 +97,9 @@ class EmotionAnalysisServer:
         emotion_scores_count = {}
         emotions_per_second = {}  # {second: [emotions]}
         frame_count = 0
+
+        # Context from client (user_id, ad_id)
+        client_context = {}
 
         try:
             # Connect to Hume streaming API
@@ -174,6 +185,14 @@ class EmotionAnalysisServer:
                     elif isinstance(message, str):
                         data = json.loads(message)
 
+                        # Handle start action with context
+                        if data.get("action") == "start":
+                            client_context["user_id"] = data.get("user_id")
+                            client_context["ad_id"] = data.get("ad_id")
+                            logger.info(f"[{session_id}] Context set - user_id: {client_context.get('user_id')}, ad_id: {client_context.get('ad_id')}")
+                            await websocket.send(json.dumps({"status": "context_set", "user_id": client_context.get("user_id"), "ad_id": client_context.get("ad_id")}))
+                            continue
+
                         # Handle end of stream
                         if data.get("action") == "end":
                             break
@@ -223,8 +242,8 @@ class EmotionAnalysisServer:
                 except:
                     pass
 
-                # Upload to Supabase
-                await self.upload_to_supabase(summary)
+                # Upload to Supabase with context
+                await self.upload_to_supabase(summary, client_context)
 
                 logger.info(
                     f"[{session_id}] Complete: {frame_count} frames, "
