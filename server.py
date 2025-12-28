@@ -75,6 +75,8 @@ class EmotionAnalysisServer:
                 data["user_id"] = context["user_id"]
             if context.get("ad_id"):
                 data["ad_id"] = context["ad_id"]
+            if context.get("reaction_id"):
+                data["reaction_id"] = context["reaction_id"]
 
             self.supabase.table("analysis_results").insert(data).execute()
             logger.info("Results uploaded to Supabase")
@@ -186,8 +188,9 @@ class EmotionAnalysisServer:
                         if data.get("action") == "start":
                             client_context["user_id"] = data.get("user_id")
                             client_context["ad_id"] = data.get("ad_id")
-                            logger.info(f"Context set - user_id: {client_context.get('user_id')}, ad_id: {client_context.get('ad_id')}")
-                            await websocket.send(json.dumps({"status": "context_set", "user_id": client_context.get("user_id"), "ad_id": client_context.get("ad_id")}))
+                            client_context["reaction_id"] = data.get("reaction_id")
+                            logger.info(f"Context set - user_id: {client_context.get('user_id')}, ad_id: {client_context.get('ad_id')}, reaction_id: {client_context.get('reaction_id')}")
+                            await websocket.send(json.dumps({"status": "context_set", "user_id": client_context.get("user_id"), "ad_id": client_context.get("ad_id"), "reaction_id": client_context.get("reaction_id")}))
                             continue
 
                         # Handle end of stream
@@ -218,6 +221,7 @@ class EmotionAnalysisServer:
 
                 summary = {
                     "status": "complete",
+                    "reaction_id": client_context.get("reaction_id"),
                     "total_frames": frame_count,
                     "frames_with_faces": total,
                     "processing_time_seconds": round(elapsed_time, 2),
@@ -238,8 +242,11 @@ class EmotionAnalysisServer:
                 except:
                     pass
 
-                # Upload to Supabase with context
-                await self.upload_to_supabase(summary, client_context)
+                # Upload to Supabase with context (only if processing time >= 10 seconds)
+                if elapsed_time >= 10:
+                    await self.upload_to_supabase(summary, client_context)
+                else:
+                    logger.info(f"Skipping Supabase upload: processing time ({elapsed_time:.2f}s) < 10 seconds")
 
                 logger.info(
                     f"Complete: {frame_count} frames, "
@@ -249,6 +256,7 @@ class EmotionAnalysisServer:
                 try:
                     await websocket.send(json.dumps({
                         "status": "complete",
+                        "reaction_id": client_context.get("reaction_id"),
                         "total_frames": frame_count,
                         "frames_with_faces": 0,
                         "processing_time_seconds": round(elapsed_time, 2),
