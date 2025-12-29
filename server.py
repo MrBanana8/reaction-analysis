@@ -31,7 +31,7 @@ class EmotionAnalysisServer:
         load_dotenv()
 
         self.host = os.getenv("WS_HOST", "0.0.0.0")
-        self.port = int(os.getenv("WS_PORT", "8765"))
+        self.port = int(os.getenv("WS_PORT") or os.getenv("PORT") or "8765")
         self.api_key = os.getenv("HUME_API_KEY")
         self.analyze_every_n_frames = int(os.getenv("ANALYZE_EVERY_N_FRAMES", "1"))
 
