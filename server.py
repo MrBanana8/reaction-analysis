@@ -34,6 +34,7 @@ class EmotionAnalysisServer:
         self.port = int(os.getenv("WS_PORT") or os.getenv("PORT") or "8765")
         self.api_key = os.getenv("HUME_API_KEY")
         self.analyze_every_n_frames = int(os.getenv("ANALYZE_EVERY_N_FRAMES", "1"))
+        self.min_seconds_to_upload = int(os.getenv("MIN_SECONDS_TO_UPLOAD", "5"))
 
         if not self.api_key:
             raise ValueError("HUME_API_KEY must be set in .env")
@@ -242,11 +243,11 @@ class EmotionAnalysisServer:
                 except:
                     pass
 
-                # Upload to Supabase with context (only if processing time >= 10 seconds)
-                if elapsed_time >= 10:
+                # Upload to Supabase with context (only if processing time >= min_seconds_to_upload)
+                if elapsed_time >= self.min_seconds_to_upload:
                     await self.upload_to_supabase(summary, client_context)
                 else:
-                    logger.info(f"Skipping Supabase upload: processing time ({elapsed_time:.2f}s) < 10 seconds")
+                    logger.info(f"Skipping Supabase upload: processing time ({elapsed_time:.2f}s) < {self.min_seconds_to_upload} seconds")
 
                 logger.info(
                     f"Complete: {frame_count} frames, "
