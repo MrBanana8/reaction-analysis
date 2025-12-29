@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8765:8765"
+    environment:
+      - HUME_API_KEY=${HUME_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - ANALYZE_EVERY_N_FRAMES=${ANALYZE_EVERY_N_FRAMES:-1}
+    restart: unless-stopped

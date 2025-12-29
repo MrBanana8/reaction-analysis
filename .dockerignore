@@ -1,0 +1,13 @@
+.env
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+test_client.py
+*.mp4
+*.avi
+*.mov
+.mcp.json
