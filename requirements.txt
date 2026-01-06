@@ -3,4 +3,3 @@ python-dotenv
 opencv-python
 websockets
 supabase
-aiofiles
