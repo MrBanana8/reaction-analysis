@@ -26,13 +26,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def get_secret(name: str) -> str | None:
+    """Read secret from file (Docker secrets) or fall back to env var."""
+    file_path = os.environ.get(f"{name}_FILE")
+    if file_path and os.path.exists(file_path):
+        with open(file_path) as f:
+            return f.read().strip()
+    return os.environ.get(name)
+
+
 class EmotionAnalysisServer:
     def __init__(self):
         load_dotenv()
 
         self.host = os.getenv("WS_HOST", "0.0.0.0")
         self.port = int(os.getenv("WS_PORT") or os.getenv("PORT") or "8765")
-        self.api_key = os.getenv("HUME_API_KEY")
+        self.api_key = get_secret("HUME_API_KEY")
         self.analyze_every_n_frames = int(os.getenv("ANALYZE_EVERY_N_FRAMES", "1"))
         self.min_seconds_to_upload = int(os.getenv("MIN_SECONDS_TO_UPLOAD", "5"))
 
@@ -41,8 +50,8 @@ class EmotionAnalysisServer:
 
         # Initialize Supabase client (optional)
         self.supabase: Client | None = None
-        supabase_url = os.getenv("SUPABASE_URL")
-        supabase_key = os.getenv("SUPABASE_SERVICE_KEY")
+        supabase_url = get_secret("SUPABASE_URL")
+        supabase_key = get_secret("SUPABASE_SERVICE_KEY")
         if supabase_url and supabase_key:
             self.supabase = create_client(supabase_url, supabase_key)
             logger.info("Supabase client initialized")

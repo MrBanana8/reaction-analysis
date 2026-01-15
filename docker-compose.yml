@@ -4,11 +4,23 @@ services:
     ports:
       - "8765:8765"
     environment:
-      - HUME_API_KEY=${HUME_API_KEY}
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - HUME_API_KEY_FILE=/run/secrets/hume_api_key
+      - SUPABASE_URL_FILE=/run/secrets/supabase_url
+      - SUPABASE_SERVICE_KEY_FILE=/run/secrets/supabase_service_key
       - ANALYZE_EVERY_N_FRAMES=${ANALYZE_EVERY_N_FRAMES:-1}
       - WS_HOST=${WS_HOST:-0.0.0.0}
       - WS_PORT=${WS_PORT:-8765}
       - MIN_SECONDS_TO_UPLOAD=${MIN_SECONDS_TO_UPLOAD:-5}
+    secrets:
+      - hume_api_key
+      - supabase_url
+      - supabase_service_key
     restart: unless-stopped
+
+secrets:
+  hume_api_key:
+    file: /home/evoke/.secrets/hume_api_key
+  supabase_url:
+    file: /home/evoke/.secrets/supabase_url
+  supabase_service_key:
+    file: /home/evoke/.secrets/supabase_service_key
